@@ -1,0 +1,123 @@
+- hosts: localhost
+  gather_facts: no
+  vars:
+    target_aws_region: us-west-2
+  vars_files:
+    - secret.yml
+  tasks:
+  - name: find current Windows AMI in this region
+    ec2_ami_find:
+      region: "{{ target_aws_region }}"
+      platform: windows
+      virtualization_type: hvm
+      owner: amazon
+      name: Windows_Server-2012-R2_RTM-English-64Bit-Base-*
+      no_result_action: fail
+      sort: name
+      sort_order: descending
+    register: found_amis
+
+  - set_fact:
+      win_ami_id: "{{ (found_amis.results | first).ami_id  }}"
+
+  - name: ensure security group is present
+    ec2_group:
+      name: WinRM RDP
+      description: Inbound WinRM and RDP
+      region: "{{ target_aws_region }}"
+      rules:
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 5986
+        to_port: 5986
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 5985
+        to_port: 5985
+        cidr_ip: 0.0.0.0/0  
+      - proto: tcp
+        from_port: 3389
+        to_port: 3389
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: 0.0.0.0/0
+      
+      rules_egress:
+        - proto: all
+          from_port: 0
+          to_port: 65535
+          cidr_ip: 0.0.0.0/0
+    register: sg_out
+
+  - name: ensure instances are running
+    ec2:
+      region: "{{ target_aws_region }}"
+      image: "{{ win_ami_id }}"
+      instance_type: t2.micro
+      group_id: "{{ sg_out.group_id }}"
+      wait: yes
+      wait_timeout: 500
+      exact_count: 1
+      count_tag:
+        Name: stock-win-ami-test
+      instance_tags:
+        Name: stock-win-ami-test
+      user_data: "{{ lookup('template', 'userdata.txt.j2') }}"
+    register: ec2_result
+
+  - name: wait for WinRM to answer on all hosts
+    wait_for:
+      port: 5986
+      host: "{{ item.public_ip }}"
+      timeout: 300
+    with_items: "{{ ec2_result.tagged_instances }}"
+
+  - name: add hosts to groups
+    add_host:
+      name: "win-temp-{{ item.id }}"
+      ansible_ssh_host: "{{ item.public_ip }}"
+      groups: win
+    changed_when: false
+    with_items: "{{ ec2_result.tagged_instances }}"
+
+- name: web app setup
+  hosts: win
+  gather_facts: no
+  vars_files: [ "secret.yml" ]
+  tasks:
+  - name: ensure IIS and ASP.NET are installed
+    win_feature:
+      name: AS-Web-Support
+
+  - name: ensure application dir exists
+    win_file:
+      path: c:\inetpub\foo
+      state: directory
+
+  - name: ensure default.aspx is present
+    win_copy:
+      src: default.aspx
+      dest: c:\inetpub\foo\default.aspx
+
+  - name: ensure that the foo web application exists
+    win_iis_webapplication:
+      name: foo
+      physical_path: c:\inetpub\foo
+      site: Default Web Site
+
+  - name: ensure that application responds properly
+    uri:
+      url: http://{{ ansible_ssh_host}}/foo
+      return_content: yes
+    register: uri_out
+    delegate_to: localhost
+    until: uri_out.content | search("Hello from")
+    retries: 3
+
+  - debug:
+      msg: web application is available at http://{{ ansible_ssh_host}}/foo

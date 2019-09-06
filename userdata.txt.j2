@@ -1,0 +1,13 @@
+
+winrm quickconfig
+
+netsh advfirewall firewall add rule name="WinRM-HTTP" dir=in localport=5985 protocol=TCP action=allow
+
+winrm set winrm/config/client/auth '@{Basic="true"}'
+winrm set winrm/config/service/auth '@{Basic="true"}'
+winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+<powershell>
+$admin = [adsi]("WinNT://./administrator, user")
+$admin.PSBase.Invoke("SetPassword", "{{ win_initial_password }}")
+Invoke-Expression ((New-Object System.Net.Webclient).DownloadString('https://raw.githubusercontent.com/ansible/ansible/devel/examples/scripts/ConfigureRemotingForAnsible.ps1'))
+</powershell>
