@@ -1,48 +1,19 @@
 - hosts: localhost
-  gather_facts: no
+  gather_facts: yes
   vars:
     target_aws_region: us-west-2
   vars_files:
     - secret.yml
   tasks:
-    - include: infrastructure.yaml
-    - include: security_group.yaml
-    - include: ec2.yaml
-    - include: checkpoint.yaml
+    - include: infra_tasks/infrastructure.yaml
+    - include: infra_tasks/security_group.yaml
+    - include: infra_tasks/ec2.yaml
+    - include: infra_tasks/checkpoint.yaml
 
 - name: web app setup
   hosts: win
   gather_facts: no
   vars_files: [ "secret.yml" ]
   tasks:
-  - name: ensure IIS and ASP.NET are installed
-    win_feature:
-      name: AS-Web-Support
-
-  - name: ensure application dir exists
-    win_file:
-      path: c:\inetpub\foo
-      state: directory
-
-  - name: ensure default.aspx is present
-    win_copy:
-      src: default.aspx
-      dest: c:\inetpub\foo\default.aspx
-
-  - name: ensure that the foo web application exists
-    win_iis_webapplication:
-      name: foo
-      physical_path: c:\inetpub\foo
-      site: Default Web Site
-
-  - name: ensure that application responds properly
-    uri:
-      url: http://{{ ansible_ssh_host}}/foo
-      return_content: yes
-    register: uri_out
-    delegate_to: localhost
-    until: uri_out.content | search("Hello from")
-    retries: 3
-
-  - debug:
-      msg: web application is available at http://{{ ansible_ssh_host}}/foo
+    - include: app_tasks/app.yaml
+  
