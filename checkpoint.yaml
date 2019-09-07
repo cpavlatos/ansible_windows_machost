@@ -1,0 +1,14 @@
+- name: WinRM and EC2 checkpoint
+  wait_for:
+    port: 5986
+    host: "{{ item.public_ip }}"
+    timeout: 300
+  with_items: "{{ ec2_result.tagged_instances }}"
+
+- name: add hosts to groups
+  add_host:
+    name: "win-temp-{{ item.id }}"
+    ansible_ssh_host: "{{ item.public_ip }}"
+    groups: win
+  changed_when: false
+  with_items: "{{ ec2_result.tagged_instances }}"

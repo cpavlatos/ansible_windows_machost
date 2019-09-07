@@ -1,0 +1,16 @@
+---
+- name: Spin-up ec2 instance in default VPC
+  ec2:
+    region: "{{ target_aws_region }}"
+    image: "{{ win_ami_id }}"
+    instance_type: t2.micro
+    group_id: "{{ sg_out.group_id }}"
+    wait: yes
+    wait_timeout: 500
+    exact_count: 1
+    count_tag:
+      Name: stock-win-ami-test
+    instance_tags:
+      Name: stock-win-ami-test
+    user_data: "{{ lookup('template', 'userdata.txt.j2') }}"
+  register: ec2_result

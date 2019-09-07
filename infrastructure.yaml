@@ -1,0 +1,14 @@
+- name: Infrastructure setup, find the current Windows AMI in target region
+  ec2_ami_find:
+    region: "{{ target_aws_region }}"
+    platform: windows
+    virtualization_type: hvm
+    owner: amazon
+    name: Windows_Server-2012-R2_RTM-English-64Bit-Base-*
+    no_result_action: fail
+    sort: name
+    sort_order: descending
+  register: found_amis
+
+- set_fact:
+    win_ami_id: "{{ (found_amis.results | first).ami_id  }}"

@@ -1,0 +1,33 @@
+- name: Create Security Group in target region
+  ec2_group:
+    name: WinRM RDP
+    description: Inbound WinRM and RDP
+    region: "{{ target_aws_region }}"
+    rules:
+    - proto: tcp
+      from_port: 80
+      to_port: 80
+      cidr_ip: 0.0.0.0/0
+    - proto: tcp
+      from_port: 5986
+      to_port: 5986
+      cidr_ip: 0.0.0.0/0
+    - proto: tcp
+      from_port: 5985
+      to_port: 5985
+      cidr_ip: 0.0.0.0/0  
+    - proto: tcp
+      from_port: 3389
+      to_port: 3389
+      cidr_ip: 0.0.0.0/0
+    - proto: tcp
+      from_port: 22
+      to_port: 22
+      cidr_ip: 0.0.0.0/0
+    
+    rules_egress:
+      - proto: all
+        from_port: 0
+        to_port: 65535
+        cidr_ip: 0.0.0.0/0
+  register: sg_out
