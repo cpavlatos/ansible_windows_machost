@@ -1,9 +1,10 @@
 - hosts: localhost
   gather_facts: yes
   vars:
-    target_aws_region: us-west-2
+    target_aws_region: "{{ aws_region }}"
   vars_files:
     - secret.yml
+    - vars.yaml
   tasks:
     - include: infra_tasks/infrastructure.yaml
     - include: infra_tasks/security_group.yaml

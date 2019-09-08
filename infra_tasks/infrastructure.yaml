@@ -1,6 +1,6 @@
 - name: Infrastructure setup, find the current Windows AMI in target region
   ec2_ami_find:
-    region: "{{ target_aws_region }}"
+    region: "{{ aws_region }}"
     platform: windows
     virtualization_type: hvm
     owner: amazon

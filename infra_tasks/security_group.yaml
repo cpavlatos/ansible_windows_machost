@@ -2,7 +2,7 @@
   ec2_group:
     name: WinRM RDP
     description: Inbound WinRM and RDP
-    region: "{{ target_aws_region }}"
+    region: "{{ aws_region }}"
     rules:
     - proto: tcp
       from_port: 80

@@ -1,7 +1,7 @@
 ---
 - name: Spin-up ec2 instance in default VPC
   ec2:
-    region: "{{ target_aws_region }}"
+    region: "{{ aws_region }}"
     image: "{{ win_ami_id }}"
     instance_type: t2.micro
     group_id: "{{ sg_out.group_id }}"
