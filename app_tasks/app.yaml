@@ -7,10 +7,15 @@
     path: c:\inetpub\foo
     state: directory
 
-- name: ensure default.aspx is present
+- name: copy default.aspx to destination
   win_copy:
     src: default.aspx
     dest: c:\inetpub\foo\default.aspx
+
+- name: copy image to windows host
+  win_copy:
+    src: images/Ansible.jpg
+    dest: c:\inetpub\foo\Ansible.jpg 
 
 - name: ensure that the foo web application exists
   win_iis_webapplication:
